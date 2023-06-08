@@ -89,7 +89,7 @@ WrapperPublisher::WrapperPublisher()
   // Create an ImageTransport instance, initializing it with a subnode
   rclcpp::Node::SharedPtr subnode = rclcpp::Node::create_sub_node("subnode");
   image_transport::ImageTransport it(subnode);
-  // // Create a publisher using ImageTransport to publish on the topic
+  // Create a publisher using ImageTransport to publish on the topic
   publisher_ = it.advertise(topic_out_, 1);
 
 }
@@ -97,7 +97,7 @@ WrapperPublisher::WrapperPublisher()
 
 void WrapperPublisher::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
 {
-  // publish the image using the publisher created with ImageTransport
+  // Publish the image using the publisher created with ImageTransport
   if (publisher_.getNumSubscribers() > 0) {
     publisher_.publish(msg);
   }
