@@ -1,7 +1,7 @@
 /*********************************************************************
 * Software License Agreement (BSD License)
 *
-*  Copyright (c) 2023, José Miguel Guerrero Hernández.
+*  Copyright (c) 2024, José Miguel Guerrero Hernández.
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@
 #include "image_transport/image_transport.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
-#include "cv_bridge/cv_bridge.h"
+#include "cv_bridge/cv_bridge.hpp"
 #include "opencv2/core/mat.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include <rclcpp/exceptions.hpp>
@@ -55,6 +55,9 @@ public:
 
 protected:
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg);
+  void timerCallback();
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Node::SharedPtr subnode_;
   image_transport::Subscriber subscriber_;
   image_transport::Publisher publisher_;
   rclcpp::Logger logger_;

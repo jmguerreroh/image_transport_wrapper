@@ -1,7 +1,7 @@
 /*********************************************************************
 * Software License Agreement (BSD License)
 *
-*  Copyright (c) 2023, José Miguel Guerrero Hernández.
+*  Copyright (c) 2024, José Miguel Guerrero Hernández.
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -68,32 +68,21 @@ WrapperPublisher::WrapperPublisher()
     throw rclcpp::exceptions::InvalidTopicNameError(topic_in_.c_str(), "Topic does not exist.", 1);
   }
 
-  // Assign the subscriber to a raw transport
-  const image_transport::TransportHints hints(this, "raw");
-  try {
-    auto subscription_options = rclcpp::SubscriptionOptions();
-    // Create a subscription with QoS profile that will be used for the subscription.
-    subscriber_ = image_transport::create_subscription(
-      this,
-      topic_in_,
-      std::bind(&WrapperPublisher::imageCallback, this, std::placeholders::_1),
-      hints.getTransport(),
-      rmw_qos_profile_sensor_data,
-      subscription_options);
-  } catch (image_transport::TransportLoadException & e) {
-    RCLCPP_ERROR(
-      logger_, "Failed to create subscriber for topic %s: %s", topic_in_.c_str(),
-      e.what());
-  }
-
-  // Create an ImageTransport instance, initializing it with a subnode
-  rclcpp::Node::SharedPtr subnode = rclcpp::Node::create_sub_node("subnode");
-  image_transport::ImageTransport it(subnode);
-  // Create a publisher using ImageTransport to publish on the topic
+  rclcpp::NodeOptions options;
+  subnode_ = rclcpp::Node::make_shared("image_listener", options);
+  // TransportHints does not actually declare the parameter
+  subnode_->declare_parameter<std::string>("image_transport", "raw");
+  image_transport::ImageTransport it(subnode_);
+  image_transport::TransportHints hints(subnode_.get());
+  subscriber_ = it.subscribe(topic_in_, 1, &WrapperPublisher::imageCallback, this, &hints);
   publisher_ = it.advertise(topic_out_, 1);
 
-}
+  // Create a timer to publish the image
+  timer_ = this->create_wall_timer(
+    std::chrono::milliseconds(1000 / 30),
+    std::bind(&WrapperPublisher::timerCallback, this));
 
+}
 
 void WrapperPublisher::imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
 {
@@ -101,6 +90,12 @@ void WrapperPublisher::imageCallback(const sensor_msgs::msg::Image::ConstSharedP
   if (publisher_.getNumSubscribers() > 0) {
     publisher_.publish(msg);
   }
+}
+
+void WrapperPublisher::timerCallback()
+{
+  // Create a message to publish
+  rclcpp::spin_some(subnode_);
 }
 
 }  // namespace wrapper_publisher
